@@ -1,0 +1,32 @@
+:root { --fg: #1f2933; --muted: #616e7c; --accent: #0b6e4f; --bg: #fafaf7; --line: #d9d9d0; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  color: var(--fg); background: var(--bg); line-height: 1.7; }
+main { max-width: 860px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+a { color: var(--accent); }
+.site-header { background: var(--accent); padding: .6rem 1.25rem; }
+.site-header .brand { color: #fff; font-weight: 700; text-decoration: none; }
+.notice { background: #fff6d6; border-bottom: 1px solid #ecd98b; padding: .4rem 1.25rem; font-size: .85rem; }
+.notice-version { background: #e3f1ff; border-color: #a9cdf0; }
+.site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; padding: 1rem 1.25rem; text-align: center; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { border: 1px solid var(--line); padding: .4rem .6rem; text-align: left; vertical-align: top; }
+.article, .feed-item { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: .5rem 1rem; margin: .75rem 0; }
+.article h3, .feed-item h3 { margin: .25rem 0; font-size: 1.05rem; }
+.chapter { color: var(--muted); font-size: .85rem; margin: 0; }
+.article-content p, .text p { margin: .25rem 0; }
+.pagination, .pager { display: flex; gap: 1rem; justify-content: center; margin: 1.5rem 0; }
+.law-meta { display: grid; grid-template-columns: max-content 1fr; gap: .1rem 1rem; }
+.law-meta dd { margin: 0; }
+.law-cards { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; }
+.law-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .75rem; display: flex; flex-direction: column; }
+.law-card .meta { color: var(--muted); font-size: .8rem; }
+.loading { color: var(--muted); padding: 1rem 0; }
+.end { color: var(--muted); text-align: center; padding: 1rem 0; }
+form label { display: block; margin: .5rem 0; }
+input { padding: .3rem .5rem; font-size: 1rem; }
+button { padding: .4rem 1rem; font-size: 1rem; background: var(--accent); color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+.error { color: #b42318; }
+.canary { font-family: monospace; color: var(--muted); }
+.levels li { margin-bottom: .5rem; }
+.levels p { margin: 0; color: var(--muted); }
