@@ -1,7 +1,7 @@
 # crawler-playground 爬蟲練習站
 
 勞動部 AI 大數據人才養成班「Python 爬蟲」課程的自建練習站，用來取代爬真實網站。
-內容是 8 部勞動相關法律、共 560 條，來源是[全國法規資料庫開放資料 API](https://law.moj.gov.tw/api/swagger/docs/v1)。
+內容是 8 部勞動相關法律與「營造安全衛生設施標準」，共 9 部 749 條，來源是[全國法規資料庫開放資料 API](https://law.moj.gov.tw/api/swagger/docs/v1)。
 
 - 線上版（GitHub Pages）：<https://4-learn.github.io/crawler-playground/>
 - 教室版（本機或區網）：`python server.py`

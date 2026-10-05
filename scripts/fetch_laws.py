@@ -1,4 +1,4 @@
-"""教師用：從全國法規資料庫官方開放資料 API 下載法規，挑出本站使用的勞動法律。
+"""教師用：從全國法規資料庫官方開放資料 API 下載法規，挑出本站使用的勞動法規。
 
 用法：
     python scripts/fetch_laws.py            # 產生 data/laws.v1.json
@@ -19,7 +19,8 @@ import re
 import urllib.request
 import zipfile
 
-API_URL = "https://law.moj.gov.tw/api/Ch/Law/JSON"
+API_URL = "https://law.moj.gov.tw/api/Ch/Law/JSON"      # 法律
+ORDER_API_URL = "https://law.moj.gov.tw/api/Ch/Order/JSON"  # 命令（規則、標準、細則）
 SWAGGER_URL = "https://law.moj.gov.tw/api/swagger/docs/v1"
 USER_AGENT = "4-learn-crawler-playground/1.0 (teaching; contact yillkid@gmail.com)"
 
@@ -33,6 +34,10 @@ PCODES = [
     "N0020007",  # 勞資爭議處理法
     "N0020012",  # 大量解僱勞工保護法
     "N0050031",  # 勞工職業災害保險及保護法
+]
+# 命令：營造安全衛生設施標準，接續「事件驅動告警系統」Ch02 作業使用的 laws.json。
+ORDER_PCODES = [
+    "N0060014",  # 營造安全衛生設施標準
 ]
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "data" / "laws.v1.json"
@@ -85,30 +90,40 @@ def convert(law: dict) -> dict:
     }
 
 
-def main() -> None:
-    req = urllib.request.Request(API_URL, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=120) as resp:
+def download(url: str, member: str) -> tuple[dict, bytes]:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=180) as resp:
         raw = resp.read()
     with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        data = json.loads(zf.read("ChLaw.json").decode("utf-8-sig"))
+        return json.loads(zf.read(member).decode("utf-8-sig")), raw
 
+
+def pick(data: dict, pcodes: list[str]) -> list[dict]:
     by_pcode = {law["LawURL"].rsplit("pcode=", 1)[1]: law for law in data["Laws"]}
-    missing = [p for p in PCODES if p not in by_pcode]
+    missing = [p for p in pcodes if p not in by_pcode]
     if missing:
         raise SystemExit(f"官方資料中找不到 pcode：{missing}")
-    abandoned = [p for p in PCODES if by_pcode[p]["LawAbandonNote"]]
+    abandoned = [p for p in pcodes if by_pcode[p]["LawAbandonNote"]]
     if abandoned:
         raise SystemExit(f"以下法規已廢止，請改選：{abandoned}")
+    return [convert(by_pcode[p]) for p in pcodes]
 
-    laws = [convert(by_pcode[p]) for p in PCODES]
+
+def main() -> None:
+    law_data, law_raw = download(API_URL, "ChLaw.json")
+    order_data, order_raw = download(ORDER_API_URL, "ChOrder.json")
+    laws = pick(law_data, PCODES) + pick(order_data, ORDER_PCODES)
     payload = {
         "source": {
-            "name": "全國法規資料庫 開放資料 API（中文法規 法律）",
+            "name": "全國法規資料庫 開放資料 API（中文法規：法律、命令）",
             "api_url": API_URL,
+            "order_api_url": ORDER_API_URL,
             "swagger_url": SWAGGER_URL,
-            "api_update_date": data["UpdateDate"],
+            "api_update_date": law_data["UpdateDate"],
+            "order_api_update_date": order_data["UpdateDate"],
             "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-            "zip_sha256": hashlib.sha256(raw).hexdigest(),
+            "zip_sha256": hashlib.sha256(law_raw).hexdigest(),
+            "order_zip_sha256": hashlib.sha256(order_raw).hexdigest(),
             "note": "法律條文依著作權法第 9 條不得為著作權標的；本站為教學用副本，不具法律效力，請以全國法規資料庫為準。",
         },
         "laws": laws,
@@ -116,7 +131,7 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     total = sum(len(l["articles"]) for l in laws)
-    print(f"寫入 {OUT}：{len(laws)} 部法律、{total} 條")
+    print(f"寫入 {OUT}：{len(laws)} 部法規、{total} 條")
     for law in laws:
         print(f"  {law['pcode']} {law['name']}：{len(law['articles'])} 條（異動日 {law['modified_date']}）")
 

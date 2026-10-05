@@ -157,7 +157,7 @@ def build_v1_static(out: pathlib.Path, data: dict, base: str) -> None:
         for law in laws
     )
     body = f"""<h1>勞動法規列表</h1>
-<p>共 <span id="law-count">{len(laws)}</span> 部法律。點選法規名稱查看條文。</p>
+<p>共 <span id="law-count">{len(laws)}</span> 部法規。點選法規名稱查看條文。</p>
 <table class="law-list">
 <thead><tr><th>法規名稱</th><th>pcode</th><th>異動日期</th><th>條文數</th></tr></thead>
 <tbody>{rows}</tbody>
@@ -517,7 +517,7 @@ def build_root(out: pathlib.Path, base: str, site_url: str, data: dict, v2: dict
     )
     src = data["source"]
     body = f"""<h1>爬蟲練習站</h1>
-<p>這是勞動部 AI 大數據人才養成班「Python 爬蟲」課程的練習網站。內容是勞動相關法律條文，
+<p>這是勞動部 AI 大數據人才養成班「Python 爬蟲」課程的練習網站。內容是勞動相關法規條文，
 資料取自<a href="{esc(src["swagger_url"])}">全國法規資料庫開放資料 API</a>（官方資料日期：{esc(src["api_update_date"])}）。</p>
 <h2>上課規則</h2>
 <ul class="rules">
