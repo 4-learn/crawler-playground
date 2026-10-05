@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4 playwright pytest
+      - run: playwright install --with-deps chromium
+      - name: Test local server (root path)
+        run: |
+          python server.py --port 8000 --quiet &
+          sleep 3
+          PG_BASE_URL=http://127.0.0.1:8000/ PG_LOCAL=1 pytest -q tests
+      - name: Test GitHub Pages build (sub path)
+        run: |
+          python build.py --base /crawler-playground/ --out site/crawler-playground
+          (cd site && python -m http.server 8001 >/dev/null 2>&1 &)
+          sleep 2
+          PG_BASE_URL=http://127.0.0.1:8001/crawler-playground/ pytest -q tests

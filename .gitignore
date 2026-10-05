@@ -1,0 +1,7 @@
+dist/
+dist-local/
+.venv/
+__pycache__/
+*.pyc
+test-results/
+site/
