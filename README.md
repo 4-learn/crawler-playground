@@ -40,6 +40,17 @@
 
 建議：學員回家練習用 GitHub Pages；上課示範 429、401 和 robots 違規紀錄時，老師用 `python server.py --host 0.0.0.0` 開在教室區網。
 
+### 公開的教室版：<https://crawler.4impact.cc/>
+
+教室版也放在公開網址上（Cloudflare Tunnel），學員不在同一個區網也能練 429、401、304：
+
+```bash
+python server.py --port 8767 --trust-proxy --site-url https://crawler.4impact.cc
+cloudflared tunnel run --url http://127.0.0.1:8767 crawler-playground
+```
+
+`--trust-proxy` 讓速率限制看 Cloudflare 帶來的 `CF-Connecting-IP`，每位學員各自計算額度；只有放在代理後面才開，直接對外時不要開（任何人都能偽造這個 header）。
+
 ## 開發
 
 只用 Python 標準函式庫，不必安裝任何套件就能建站和啟動伺服器。

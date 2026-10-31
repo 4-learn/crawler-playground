@@ -8,6 +8,8 @@
 用法：
     python server.py                      # http://127.0.0.1:8000
     python server.py --host 0.0.0.0       # 教室區網，學員連老師電腦
+    python server.py --trust-proxy --site-url https://crawler.4impact.cc
+                                          # 放在 Cloudflare Tunnel 後面（公開網址）
 只用 Python 標準函式庫。啟動前會自動以 base=/ 重建 dist/。
 """
 
@@ -54,11 +56,21 @@ class RateLimiter:
 class Handler(http.server.SimpleHTTPRequestHandler):
     limiter: RateLimiter
     quiet: bool = False
+    trust_proxy: bool = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIST), **kwargs)
 
     # ---- 共用
+    def _ip(self) -> str:
+        """學員的 IP。放在 Cloudflare Tunnel 後面時，連線都來自 tunnel 本身，
+        要改看 Cloudflare 帶來的 CF-Connecting-IP，否則全班會共用同一個額度。"""
+        if self.trust_proxy:
+            ip = self.headers.get("CF-Connecting-IP") or self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            if ip:
+                return ip
+        return self.client_address[0]
+
     def _path(self) -> str:
         return self.path.split("?", 1)[0].split("#", 1)[0]
 
@@ -79,7 +91,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _guard(self) -> bool:
         """回傳 True 代表已回應（被擋下）。"""
-        ok, retry = self.limiter.allow(self.client_address[0])
+        ok, retry = self.limiter.allow(self._ip())
         if not ok:
             self._send_text(429, "429 Too Many Requests：請放慢速度（每秒最多 1～2 個請求）。\n",
                             {"Retry-After": str(retry)})
@@ -96,7 +108,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return True
         if path.startswith(("/v1/admin/", "/v2/admin/")):
             ua = self.headers.get("User-Agent", "-")
-            sys.stderr.write(f"[robots] {self.client_address[0]} 抓了 Disallow 路徑 {path}（UA: {ua}）\n")
+            sys.stderr.write(f"[robots] {self._ip()} 抓了 Disallow 路徑 {path}（UA: {ua}）\n")
         return False
 
     # ---- 條件式請求
@@ -142,7 +154,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         if not self.quiet:
             ua = self.headers.get("User-Agent", "-") if hasattr(self, "headers") and self.headers else "-"
-            sys.stderr.write(f"{self.client_address[0]} [{self.log_date_time_string()}] {fmt % args} UA={ua}\n")
+            sys.stderr.write(f"{self._ip()} [{self.log_date_time_string()}] {fmt % args} UA={ua}\n")
 
 
 def main() -> None:
@@ -153,17 +165,21 @@ def main() -> None:
     ap.add_argument("--burst", type=int, default=20, help="同一 IP 可瞬間發出的請求數（預設 20）")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--no-build", action="store_true", help="不要重建 dist-local/")
+    ap.add_argument("--trust-proxy", action="store_true",
+                    help="放在 Cloudflare Tunnel／反向代理後面時，用 CF-Connecting-IP 辨識學員（只在前面確定是代理時開）")
+    ap.add_argument("--site-url", help="對外網址，用於 sitemap 與 robots.txt，例如 https://crawler.4impact.cc")
     args = ap.parse_args()
 
-    site_url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '') else args.host}:{args.port}"
+    site_url = (args.site_url or f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '') else args.host}:{args.port}").rstrip("/")
     if not args.no_build:
         subprocess.run([sys.executable, str(ROOT / "build.py"), "--base", "/", "--site-url", site_url,
                         "--out", str(DIST)], check=True)
     Handler.limiter = RateLimiter(rate=args.rate, burst=args.burst)
     Handler.quiet = args.quiet
+    Handler.trust_proxy = args.trust_proxy
     os.chdir(DIST)
     with http.server.ThreadingHTTPServer((args.host, args.port), Handler) as httpd:
-        print(f"練習站：{site_url}/   （Ctrl+C 結束）")
+        print(f"練習站：{site_url}/   （本機 {args.host}:{args.port}，Ctrl+C 結束）")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
