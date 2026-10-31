@@ -8,8 +8,8 @@
 用法：
     python server.py                      # http://127.0.0.1:8000
     python server.py --host 0.0.0.0       # 教室區網，學員連老師電腦
-    python server.py --trust-proxy --site-url https://crawler.4impact.cc
-                                          # 放在 Cloudflare Tunnel 後面（公開網址）
+    python server.py --trust-proxy --site-url https://你的網域
+                                          # 放在反向代理／Cloudflare Tunnel 後面
 只用 Python 標準函式庫。啟動前會自動以 base=/ 重建 dist/。
 """
 
@@ -167,7 +167,7 @@ def main() -> None:
     ap.add_argument("--no-build", action="store_true", help="不要重建 dist-local/")
     ap.add_argument("--trust-proxy", action="store_true",
                     help="放在 Cloudflare Tunnel／反向代理後面時，用 CF-Connecting-IP 辨識學員（只在前面確定是代理時開）")
-    ap.add_argument("--site-url", help="對外網址，用於 sitemap 與 robots.txt，例如 https://crawler.4impact.cc")
+    ap.add_argument("--site-url", help="對外網址，用於 sitemap 與 robots.txt，例如 https://example.com")
     args = ap.parse_args()
 
     site_url = (args.site_url or f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '') else args.host}:{args.port}").rstrip("/")
