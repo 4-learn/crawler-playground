@@ -40,16 +40,18 @@
 
 建議：學員回家練習用 GitHub Pages；上課示範 429、401 和 robots 違規紀錄時，老師用 `python server.py --host 0.0.0.0` 開在教室區網。
 
-### 公開的教室版：<https://crawler.4impact.cc/>
+### 放在反向代理／Cloudflare Tunnel 後面（選用）
 
-教室版也放在公開網址上（Cloudflare Tunnel），學員不在同一個區網也能練 429、401、304：
+如果要把教室版放到公開網址，`server.py` 前面通常會有代理，所有連線看起來都來自代理本身：
 
 ```bash
-python server.py --port 8767 --trust-proxy --site-url https://crawler.4impact.cc
-cloudflared tunnel run --url http://127.0.0.1:8767 crawler-playground
+python server.py --port 8767 --trust-proxy --site-url https://你的網域
 ```
 
-`--trust-proxy` 讓速率限制看 Cloudflare 帶來的 `CF-Connecting-IP`，每位學員各自計算額度；只有放在代理後面才開，直接對外時不要開（任何人都能偽造這個 header）。
+- `--trust-proxy`：速率限制與 `[robots]` 紀錄改看 `CF-Connecting-IP`（或 `X-Forwarded-For`），每位學員各自計算額度。只有前面確定是代理時才開，直接對外時不要開（任何人都能偽造這個 header）。
+- `--site-url`：robots.txt 與 sitemap 寫的對外網址。
+
+注意：經過 Cloudflare 時，網域若開了「Manage robots.txt」，Cloudflare 會在 robots.txt 前面插入 `User-agent: *` 與 `Allow: /`，Python 的 robotparser 只看第一段，`v1/admin/` 就會被判成可以爬；開了 Browser Integrity Check 時，`urllib` 預設的 User-Agent 會被擋（403）。用於上課前要先關掉這兩項。
 
 ## 開發
 
